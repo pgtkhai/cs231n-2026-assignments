@@ -318,7 +318,27 @@ class FullyConnectedNet(object):
             W = self.params[f'W{i}']
             b = self.params[f'b{i}']
 
-            out, caches[f'']
+            out, caches[f'affine{i}'] = affine_forward(out, W, b)
+            
+            # Normalization
+            if self.normalization:
+                gamma = self.params[f'gamma{i}']  
+                beta = self.params[f'beta{i}']
+                bn_param = self.bn_params[i - 1]
+                if self.normalization == "batchnorm":
+                    out, caches[f'norm{i}'] = batchnorm_forward(out, gamma, beta, bn_param)
+                elif self.normalization == "layernorm":
+                    out, caches[f'norm{i}'] = layernorm_forward(out, gamma, beta, bn_param)
+            
+            #ReLU
+            out, caches[f'relu{i}'] = relu_forward(out)
+
+            # Dropout
+            if self.use_dropout:
+                out, caches[f'dropout{i}'] = dropout_forward(out, self.dropout_param)
+
+        scores, caches[f'affine{self.num_layers}'] = affine_forward(out, self.params[f'W{self.num_layers}'], self.params[f'b{self.num_layers}'])
+
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -341,6 +361,43 @@ class FullyConnectedNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
+        
+        # Softmax Loss & L2 Regularization
+        loss, dout = softmax_loss(scores, y)
+        for i in range(1, self.num_layers + 1):
+            W = self.params[f'W{i}']
+            loss += 0.5 * self.reg * np.sum(W ** 2)
+
+        # Output Layer Backward (Layer L)
+        L = self.num_layers
+        dout, dW_last, db_last = affine_backward(dout, caches[f'affine{L}'])
+        dW_last += self.reg * self.params[f'W{L}']
+        grads[f'W{L}'] = dW_last
+        grads[f'b{L}'] = db_last
+
+        # Hidden Layers Backward (Layer L-1 down to 1)
+        for i in range(self.num_layers - 1, 0, -1):
+            # Dropout backward
+            if self.use_dropout:
+                dout = dropout_backward(dout, caches[f'dropout{i}'])
+
+            # ReLU backward
+            dout = relu_backward(dout, caches[f'relu{i}'])
+
+            # Normalization backward
+            if self.normalization is not None:
+                if self.normalization == "batchnorm":
+                    dout, dgamma, dbeta = batchnorm_backward(dout, caches[f'norm{i}'])
+                elif self.normalization == "layernorm":
+                    dout, dgamma, dbeta = layernorm_backward(dout, caches[f'norm{i}'])
+                grads[f'gamma{i}'] = dgamma
+                grads[f'beta{i}'] = dbeta
+
+            # Affine backward
+            dout, dW, db = affine_backward(dout, caches[f'affine{i}'])
+            dW += self.reg * self.params[f'W{i}']
+            grads[f'W{i}'] = dW
+            grads[f'b{i}'] = db
 
         ############################################################################
         #                             END OF YOUR CODE                             #
