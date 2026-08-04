@@ -1,0 +1,58 @@
+# ==========================================
+# Python & Environments
+# ==========================================
+.venv/
+venv/
+env/
+ENV/
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+
+# ==========================================
+# Jupyter Notebooks
+# ==========================================
+.ipynb_checkpoints/
+
+# ==========================================
+# CS231n Datasets & Heavy Data Files
+# ==========================================
+**/cs231n/datasets/*
+!**/cs231n/datasets/get_datasets.sh
+data/
+datasets/
+*.tar.gz
+*.tgz
+*.gz
+*.npz
+*.h5
+*.pkl
+
+# ==========================================
+# Models, Weights & Checkpoints
+# ==========================================
+saved/
+pretrained_model/
+*.pth
+*.pt
+*.ckpt
+*.onnx
+*.bin
+
+# ==========================================
+# Generated Submissions & Output Exports
+# ==========================================
+assignment*.zip
+collect_submission.zip
+*.pdf
+
+# ==========================================
+# OS & Editor Files
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
