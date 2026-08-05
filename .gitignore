@@ -16,14 +16,14 @@ __pycache__/
 # Jupyter Notebooks
 # ==========================================
 .ipynb_checkpoints/
+notebook.ipynb
 
 # ==========================================
 # CS231n Datasets & Heavy Data Files
 # ==========================================
-**/cs231n/datasets/*
-!**/cs231n/datasets/get_datasets.sh
+**/datasets/*
+!**/datasets/**.sh
 data/
-datasets/
 *.tar.gz
 *.tgz
 *.gz
