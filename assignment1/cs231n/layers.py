@@ -243,21 +243,23 @@ def batchnorm_backward(dout, cache):
     # might prove to be helpful.                                              #
     ###########################################################################
 
-    x_hat, gamma = cache
-    
+    x_hat, gamma, x_minus_mean, var_eps, std_inv = cache
+    N = dout.shape[0]
+
     # Gradient with respect to beta
-    dbeta = np.sum(dout, axis = 0)
+    dbeta = np.sum(dout, axis=0)
 
     # Gradient with respect to gamma
-    dgamma = np.sum(dout * x_hat, axis = 0)
+    dgamma = np.sum(dout * x_hat, axis=0)
 
+    # Gradient with respect to x_hat
     dx_hat = dout * gamma
     
     # Gradient with respect to variance
-    dvar = np.sum(dxhat * (x - sample_mean) * -0.5 * (var_eps ** -1.5), axis=0)
+    dvar = np.sum(dx_hat * x_minus_mean * -0.5 * (var_eps ** -1.5), axis=0)
 
     # Gradient with respect to mean
-    dxmu1 = dxhat * std_inv
+    dxmu1 = dx_hat * std_inv
     dxmu2 = (2.0 / N) * x_minus_mean * dvar
     dxmu = dxmu1 + dxmu2
     
