@@ -181,16 +181,25 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Referencing the original paper (https://arxiv.org/abs/1502.03167)   #
         # might prove to be helpful.                                          #
         #######################################################################
-        sample_mean = np.mean(x, axis = 0) # minibatch mean
-        sample_var = np.var(x, axis=0) # minibatch variance
 
-        x_hat = (x - sample_mean) / np.sqrt(sample_var + eps) # normalized
+        # Compute minibatch statistics
+        sample_mean = np.mean(x, axis=0)
+        sample_var = np.var(x, axis=0)
 
+        # Normalize incoming data
+        x_minus_mean = x - sample_mean
+        var_eps = sample_var + eps
+        std_inv = 1.0 / np.sqrt(var_eps)
+        x_hat = x_minus_mean * std_inv
+
+        # Scale and shift
         out = gamma * x_hat + beta
 
+        # Update running averages locally and inside bn_param
         running_mean = momentum * running_mean + (1 - momentum) * sample_mean
         running_var = momentum * running_var + (1 - momentum) * sample_var
 
+        # Save cache needed for both computational graph and analytical backward pass
         cache = (x_hat, gamma, x_minus_mean, var_eps, std_inv)
 
         #######################################################################
@@ -353,6 +362,22 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
 
+    # Compute features statistics
+    sample_mean = np.mean(x, axis=1, keepdims=True)
+    sample_var = np.var(x, axis=1, keepdims=True)
+
+    # Normalize incoming data
+    x_minus_mean = x - sample_mean
+    var_eps = sample_var + eps
+    std_inv = 1.0 / np.sqrt(var_eps)
+    x_hat = x_minus_mean * std_inv
+
+    # Scale and shift
+    out = gamma * x_hat + beta
+
+    # Save cache needed for backward pass
+    cache = (x_hat, gamma, x_minus_mean, var_eps, std_inv)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -383,6 +408,23 @@ def layernorm_backward(dout, cache):
     # implementation of batch normalization. The hints to the forward pass    #
     # still apply!                                                            #
     ###########################################################################
+
+    x_hat, gamma, x_minus_mean, var_eps, std_inv = cache
+    N, D = dout.shape
+
+    # Parameter gradients (summed over batch dimension)
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * x_hat, axis=0)
+
+    # Gradient w.r.t. x_hat
+    dx_hat = dout * gamma
+
+    # Feature-wise reductions for each sample (summed over feature dimension)
+    sum_dx_hat = np.sum(dx_hat, axis=1, keepdims=True)
+    sum_dx_hat_xhat = np.sum(dx_hat * x_hat, axis=1, keepdims=True)
+
+    # Input gradient normalized by feature count D
+    dx = (std_inv / D) * (D * dx_hat - sum_dx_hat - x_hat * sum_dx_hat_xhat)
 
     ###########################################################################
     #                             END OF YOUR CODE                            #
