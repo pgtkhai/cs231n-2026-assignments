@@ -784,7 +784,29 @@ def svm_loss(x, y):
     ###########################################################################
     # TODO: Copy over your solution from A1.
     ###########################################################################
+    N = x.shape[0]
+    # 1. Extract correct class scores for each sample
+    correct_class_scores = x[np.arange(N), y]
 
+    # 2. Calculate margins for all classes: max(0, x_ij - x_iyi + 1)
+    margins = np.maximum(0, x - correct_class_scores[:, np.newaxis] + 1)
+
+    # 3. Ignore correct class scores in margin summation (j != y_i)
+    margins[np.arange(N), y] = 0
+
+    # 4. Compute average loss
+    loss = np.sum(margins) / N
+
+    # 5. Compute gradient dx
+    # Indicator mask for positive margins
+    binary = (margins > 0).astype(float)
+    
+    # For correct classes, gradient is -1 * (number of margin violations)
+    row_sum = np.sum(binary, axis=1)
+    binary[np.arange(N), y] = -row_sum
+
+    # Average over batch size
+    dx = binary / N
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
