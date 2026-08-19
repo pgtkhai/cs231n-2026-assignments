@@ -6,3 +6,5 @@ ipykernel
 ImageIO
 scipy
 setuptools 
+torch
+torchvision
