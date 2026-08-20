@@ -1,17 +1,32 @@
 # ==========================================
-# Python & Environments
+# Operating System & IDEs
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ==========================================
+# Environments & Secrets
 # ==========================================
 .venv/
 venv/
 env/
 ENV/
 .env
+
+# ==========================================
+# Python Cache, Testing & Cython Builds
+# ==========================================
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
 .coverage
+build/
 *.c
+*.so
+*.pyd
 
 # ==========================================
 # Jupyter Notebooks
@@ -20,7 +35,7 @@ __pycache__/
 notebook.ipynb
 
 # ==========================================
-# CS231n Datasets & Heavy Data Files
+# CS231n Datasets & Data Archives
 # ==========================================
 **/datasets/*
 !**/datasets/**.sh
@@ -33,7 +48,7 @@ data/
 *.pkl
 
 # ==========================================
-# Models, Weights & Checkpoints
+# Model Weights & Checkpoints
 # ==========================================
 saved/
 pretrained_model/
@@ -44,22 +59,9 @@ pretrained_model/
 *.bin
 
 # ==========================================
-# Generated Submissions & Output Exports
+# Submissions, Exports & Docs
 # ==========================================
 assignment*.zip
 collect_submission.zip
 *.pdf
-
-# ==========================================
-# OS & Editor Files
-# ==========================================
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# ==========================================
-# Miscellaneous
-# ==========================================
 documents/
-build/

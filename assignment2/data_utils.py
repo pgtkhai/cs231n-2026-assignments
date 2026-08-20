@@ -2,6 +2,7 @@ import os
 import ssl
 import sys
 import tarfile
+import zipfile
 import urllib.request
 from pathlib import Path
 
@@ -15,6 +16,8 @@ BASE_DIR.mkdir(parents=True, exist_ok=True)
 cifar_folder = BASE_DIR / "cifar-10-batches-py"
 tar_file = BASE_DIR / "cifar-10-python.tar.gz"
 imagenet_file = BASE_DIR / "imagenet_val_25.npz"
+coco_folder = BASE_DIR / "coco_captioning"
+coco_zip_file = BASE_DIR / "coco_captioning.zip"
 
 
 def show_progress(block_num, block_size, total_size):
@@ -34,6 +37,7 @@ def show_progress(block_num, block_size, total_size):
     sys.stdout.flush()
 
 
+# --- CIFAR-10 & ImageNet Download ---
 if not cifar_folder.exists():
     print(f"[*] Downloading CIFAR-10 to {BASE_DIR}...")
     urllib.request.urlretrieve(
@@ -54,6 +58,25 @@ if not cifar_folder.exists():
         imagenet_file,
         reporthook=show_progress,
     )
-    print("\n[+] Dataset setup completed successfully!")
+    print("\n[+] CIFAR-10 & ImageNet setup completed successfully!")
 else:
-    print(f"[=] Datasets already present in {BASE_DIR}")
+    print(f"[=] CIFAR-10 dataset already present in {BASE_DIR}")
+
+# --- COCO Captioning Download ---
+if not coco_folder.exists():
+    print(f"\n[*] Downloading COCO captioning dataset to {BASE_DIR}...")
+    urllib.request.urlretrieve(
+        "http://cs231n.stanford.edu/coco_captioning.zip",
+        coco_zip_file,
+        reporthook=show_progress,
+    )
+    print("\n[*] Extracting COCO captioning archive...")
+    with zipfile.ZipFile(coco_zip_file, "r") as zip_ref:
+        zip_ref.extractall(path=BASE_DIR)
+
+    if coco_zip_file.exists():
+        os.remove(coco_zip_file)
+
+    print("\n[+] COCO captioning dataset setup completed successfully!")
+else:
+    print(f"[=] COCO captioning dataset already present in {BASE_DIR}")

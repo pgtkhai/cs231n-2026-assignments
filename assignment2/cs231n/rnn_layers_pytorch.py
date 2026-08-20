@@ -43,7 +43,7 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     ##############################################################################
     # TODO: Implement a single forward step for the vanilla RNN.                 #
     ##############################################################################
-
+    next_h = torch.tanh(x.mm(Wx) + prev_h.mm(Wh) + b)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -73,7 +73,14 @@ def rnn_forward(x, h0, Wx, Wh, b):
     # input data. You should use the rnn_step_forward function that you defined  #
     # above. You can use a for loop to help compute the forward pass.            #
     ##############################################################################
-
+    h_t = h0
+    h_list = []
+    
+    for x_t in torch.unbind(x, dim=1):
+        h_t = rnn_step_forward(x_t, h_t, Wx, Wh, b)
+        h_list.append(h_t)
+        
+    h = torch.stack(h_list, dim=1)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -89,7 +96,7 @@ def word_embedding_forward(x, W):
 
     Inputs:
     - x: Integer array of shape (N, T) giving indices of words. Each element idx
-      of x muxt be in the range 0 <= idx < V.
+      of x must be in the range 0 <= idx < V.
     - W: Weight matrix of shape (V, D) giving word vectors for all words.
 
     Returns a tuple of:
@@ -101,7 +108,7 @@ def word_embedding_forward(x, W):
     #                                                                            #
     # HINT: This can be done in one line using Pytorch's array indexing.         #
     ##############################################################################
-
+    out = W[x]
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -133,7 +140,20 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     # TODO: Implement the forward pass for a single timestep of an LSTM.        #
     # You may want to use the numerically stable sigmoid implementation above.  #
     #############################################################################
-
+    H = prev_h.shape[1]
+    
+    # Compute the activation vector of shape (N, 4H)
+    a = x.mm(Wx) + prev_h.mm(Wh) + b
+    
+    # Split into 4 parts and apply non-linearities
+    i = torch.sigmoid(a[:, :H])
+    f = torch.sigmoid(a[:, H:2*H])
+    o = torch.sigmoid(a[:, 2*H:3*H])
+    g = torch.tanh(a[:, 3*H:4*H])
+    
+    # Compute next cell state and next hidden state
+    next_c = f * prev_c + i * g
+    next_h = o * torch.tanh(next_c)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -167,7 +187,15 @@ def lstm_forward(x, h0, Wx, Wh, b):
     # TODO: Implement the forward pass for an LSTM over an entire timeseries.   #
     # You should use the lstm_step_forward function that you just defined.      #
     #############################################################################
-
+    h_t = h0
+    c_t = torch.zeros_like(h0)
+    h_list = []
+    
+    for x_t in torch.unbind(x, dim=1):
+        h_t, c_t = lstm_step_forward(x_t, h_t, c_t, Wx, Wh, b)
+        h_list.append(h_t)
+        
+    h = torch.stack(h_list, dim=1)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -224,7 +252,7 @@ def temporal_softmax_loss(x, y, mask, verbose=False):
     N, T, V = x.shape
 
     x_flat = x.reshape(N * T, V)
-    y_flat = y.reshape(N * T)
+    y_flat = y.reshape(N * T).long()
     mask_flat = mask.reshape(N * T)
 
     loss = torch.nn.functional.cross_entropy(x_flat, y_flat, reduction='none')

@@ -1,10 +1,11 @@
 cython
 future
-numpy
-matplotlib
-ipykernel
+h5py
 ImageIO
+ipykernel
+matplotlib
+numpy
 scipy
-setuptools 
+setuptools
 torch
 torchvision

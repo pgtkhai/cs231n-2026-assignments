@@ -141,7 +141,23 @@ class CaptioningRNN:
         #                                                                          #
         # You also don't have to implement the backward pass.                      #
         ############################################################################
-
+        # 1. Project image features to initial hidden state h0: (N, H)
+        h0 = affine_forward(features, W_proj, b_proj)
+        
+        # 2. Embed input caption words to vectors: (N, T, W)
+        word_vectors = word_embedding_forward(captions_in, W_embed)
+        
+        # 3. RNN / LSTM forward pass: (N, T, H)
+        if self.cell_type == 'rnn':
+            h = rnn_forward(word_vectors, h0, Wx, Wh, b)
+        elif self.cell_type == 'lstm':
+            h = lstm_forward(word_vectors, h0, Wx, Wh, b)
+            
+        # 4. Temporal affine to compute vocabulary scores: (N, T, V)
+        scores = temporal_affine_forward(h, W_vocab, b_vocab)
+        
+        # 5. Compute loss
+        loss = temporal_softmax_loss(scores, captions_out, mask)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -205,7 +221,32 @@ class CaptioningRNN:
         # NOTE: we are still working over minibatches in this function. Also if   #
         # you are using an LSTM, initialize the first cell state to zeros.        #
         ###########################################################################
+        # 1. Initialize hidden state from image features
+        h = features.mm(W_proj) + b_proj
+        c = torch.zeros_like(h) if self.cell_type == 'lstm' else None
 
+        # 2. First input token to feed is the <START> token for all sequences in batch
+        current_word = torch.full((N,), self._start, dtype=torch.long)
+
+        # 3. Autoregressive loop over each timestep
+        for t in range(max_length):
+            # Embed the current word: (N, W)
+            word_embed = W_embed[current_word]
+
+            # Step the recurrent cell forward
+            if self.cell_type == 'rnn':
+                h = rnn_step_forward(word_embed, h, Wx, Wh, b)
+            elif self.cell_type == 'lstm':
+                h, c = lstm_step_forward(word_embed, h, c, Wx, Wh, b)
+
+            # Project hidden state to vocabulary scores: (N, V)
+            scores = h.mm(W_vocab) + b_vocab
+
+            # Pick the word with the highest score
+            current_word = torch.argmax(scores, dim=1)
+
+            # Save the predicted word index to the captions array
+            captions[:, t] = current_word        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################

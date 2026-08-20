@@ -3,7 +3,7 @@ from future import standard_library
 
 standard_library.install_aliases()
 from builtins import range
-import urllib.request, urllib.error, urllib.parse, os, tempfile
+import urllib.request, urllib.error, urllib.parse, os, tempfile, io
 
 import numpy as np
 from imageio import imread
@@ -60,20 +60,24 @@ def deprocess_image(img, rescale=False):
 def image_from_url(url):
     """
     Read an image from a URL. Returns a numpy array with the pixel data.
-    We write the image to a temporary file then read it back. Kinda gross.
+    Reads directly from memory using io.BytesIO to avoid temporary files and OS file locking.
     """
     try:
-        f = urllib.request.urlopen(url)
-        _, fname = tempfile.mkstemp()
-        with open(fname, "wb") as ff:
-            ff.write(f.read())
-        img = imread(fname)
-        os.remove(fname)
-        return img
-    except urllib.error.URLError as e:
-        print("URL Error: ", e.reason, url)
-    except urllib.error.HTTPError as e:
-        print("HTTP Error: ", e.code, url)
+        f = urllib.request.urlopen(url, timeout=5)
+        img_data = f.read()
+        img = imread(io.BytesIO(img_data))
+        if img is not None:
+            img = np.asarray(img)
+            if img.dtype == object:
+                return None
+            if img.ndim == 3 and img.shape[2] == 4:
+                img = img[:, :, :3]
+            return img
+    except (urllib.error.URLError, urllib.error.HTTPError) as e:
+        print("URL Error: ", e, url)
+    except Exception as e:
+        print("Error loading image from URL: ", e)
+    return None
 
 
 def load_image(filename, size=None):
