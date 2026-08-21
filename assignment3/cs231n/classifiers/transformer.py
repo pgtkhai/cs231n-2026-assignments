@@ -88,7 +88,21 @@ class CaptioningTransformer(nn.Module):
         #  3) Finally, apply the decoder features on the text & image embeddings   #
         #     along with the tgt_mask. Project the output to scores per token      #
         ############################################################################
+        # 1. Embed captions and add positional encodings -> (N, T, W)
+        word_embeddings = self.embedding(captions)
+        word_embeddings = self.positional_encoding(word_embeddings)
 
+        # 2. Project visual features and add sequence dimension S=1 -> (N, 1, W)
+        image_features = self.visual_projection(features).unsqueeze(1)
+
+        # 3. Create causal lower-triangular mask -> (T, T)
+        tgt_mask = torch.tril(torch.ones(T, T, device=captions.device))
+
+        # 4. Decoder forward: tgt=word_embeddings, memory=image_features
+        decoder_out = self.transformer(word_embeddings, image_features, tgt_mask=tgt_mask)
+
+        # 5. Project hidden dimension W to vocabulary scores V -> (N, T, V)
+        scores = self.output(decoder_out)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -240,7 +254,21 @@ class VisionTransformer(nn.Module):
         #    You may find torch.mean useful.                                      #
         # 5. Feed it through a linear layer to produce class logits.              #
         ############################################################################
+        # 1. Convert input image into patch vectors: (N, num_patches, embed_dim)
+        x_patches = self.patch_embed(x)
 
+        # 2. Add positional encodings: (N, num_patches, embed_dim)
+        x_patches = self.positional_encoding(x_patches)
+
+        # 3. Pass through Transformer Encoder
+        encoded = self.transformer(x_patches)
+
+        # 4. Average pool patch representations along sequence dimension (dim=1)
+        # (N, num_patches, embed_dim) -> (N, embed_dim)
+        pooled = torch.mean(encoded, dim=1)
+
+        # 5. Classification head: (N, embed_dim) -> (N, num_classes)
+        logits = self.head(pooled)        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################

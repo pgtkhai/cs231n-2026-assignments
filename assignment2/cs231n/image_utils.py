@@ -3,7 +3,7 @@ from future import standard_library
 
 standard_library.install_aliases()
 from builtins import range
-import urllib.request, urllib.error, urllib.parse, os, tempfile, io
+import urllib.request, urllib.error, urllib.parse, os, tempfile, io, ssl
 
 import numpy as np
 from imageio import imread
@@ -61,9 +61,11 @@ def image_from_url(url):
     """
     Read an image from a URL. Returns a numpy array with the pixel data.
     Reads directly from memory using io.BytesIO to avoid temporary files and OS file locking.
+    Bypasses SSL certificate verification for legacy servers.
     """
     try:
-        f = urllib.request.urlopen(url, timeout=5)
+        ctx = ssl._create_unverified_context()
+        f = urllib.request.urlopen(url, timeout=5, context=ctx)
         img_data = f.read()
         img = imread(io.BytesIO(img_data))
         if img is not None:
