@@ -5,8 +5,10 @@ ImageIO
 ipykernel
 matplotlib
 numpy
+pandas
 scipy
 setuptools
+thop
 torch
 torchvision
 tqdm
